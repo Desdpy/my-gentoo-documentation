@@ -1,5 +1,5 @@
 # My Gentoo documentation
-This is my small little Gentoo documentation that i created and will expand on with everything i do on Gentoo.
+This is my small little Gentoo documentation that i used to install and manage gentoo. Im not using Gentoo anymore so this won't be updated.
 
 1. [Installation guide](installation_guide.md)
 2. [Setup git](setup_git.md)
