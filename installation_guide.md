@@ -266,6 +266,12 @@ mount -m /dev/<name-of-boot-partition> /mnt/gentoo/efi/
 ```
 
 ### 14. Downloading, varifying and unpacking stage3
+\
+Change into that root directory.
+```
+cd /mnt/gentoo/
+```
+\
 Enter gentoos text based download page.
 ```
 links https://distfiles.gentoo.org/releases/amd64/autobuilds
@@ -296,16 +302,6 @@ This should tell us that it is a good signature.
 Get rid of the .asc file, because the verification is done.
 ```
 rm ./<file>.asc
-```
-\
-Move the remaining file into the root directory of our system that we are installing.
-```
-mv ./<file> /mnt/gentoo
-```
-\
-Change into that root directory.
-```
-cd /mnt/gentoo/
 ```
 \
 Unpack the stage3 file.
