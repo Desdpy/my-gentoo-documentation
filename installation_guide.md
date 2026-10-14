@@ -202,8 +202,7 @@ mklabel gpt
 Create partitions
 ```
 mkpart boot fat32 0% 1GiB
-mkpart swap linux-swap 1GiB 17GiB
-mkpart root btrfs 17GiB 100%
+mkpart root btrfs 1GiB 100%
 ```
 \
 Mark the boot partition as bootable.
@@ -232,7 +231,6 @@ cryptsetup luksOpen /dev/<name-of-root-partition> cryptroot
 Lets format our partitions.
 ```
 mkfs.vfat -F 32 /dev/<name-of-boot-partition>
-mkswap /dev/<name-of-swap-partition> && swapon /dev/<name-of-swap-partition>
 mkfs.btrfs -L BTROOT /dev/mapper/cryptroot
 ```
 \
@@ -245,6 +243,7 @@ mount -m /dev/mapper/cryptroot /mnt/root/
 We can create subvolumes on the root partition to organize our filesystem.
 ```
 btrfs subvolume create /mnt/root/@
+btrfs subvolume create /mnt/root/@swap
 btrfs subvolume create /mnt/root/@home
 btrfs subvolume create /mnt/root/@snapshots
 ```
@@ -257,6 +256,7 @@ umount /mnt/root
 Afterwards we have to mount the subvolumes.
 ```
 mount -o noatime,compress=zstd:1,subvol=@ /dev/mapper/cryptroot /mnt/gentoo/
+mount -m -o noatime,compress=zstd:1,subvol=@swap /dev/mapper/cryptroot /mnt/gentoo/swap
 mount -m -o noatime,compress=zstd:1,subvol=@home /dev/mapper/cryptroot /mnt/gentoo/home
 mount -m -o noatime,compress=zstd:1,subvol=@snapshots /dev/mapper/cryptroot /mnt/gentoo/.snapshots
 ```
@@ -264,7 +264,17 @@ mount -m -o noatime,compress=zstd:1,subvol=@snapshots /dev/mapper/cryptroot /mnt
 mount -m /dev/<name-of-boot-partition> /mnt/gentoo/boot/
 mount -m /dev/<name-of-boot-partition> /mnt/gentoo/efi/
 ```
-
+## 13. Create swap
+Create swap.
+```
+btrfs filesystem mkswapfile --size 16g --uuid clear /mnt/gentoo/swap/swapfile
+```
+\
+Activate the swap file.
+```
+swapon /mnt/gentoo/swap/swapfile
+```
+\
 ### 14. Downloading, varifying and unpacking stage3
 \
 Change into that root directory.
