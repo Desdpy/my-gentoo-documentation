@@ -153,6 +153,10 @@ You can check if it worked in here.
 If the link for the wifi entry shows UP it is connected.
 
 ### Enable ssh
+Set root Password
+```
+passwd root
+```
 ```
 /etc/init.d/sshd start
 ```
@@ -197,8 +201,9 @@ mklabel gpt
 \
 Create partitions
 ```
-mkpart boot fat32 0% 1G
-mkpart root btrfs 1G 100%
+mkpart boot fat32 0% 1GiB
+mkpart swap linux-swap 1GiB 17GiB
+mkpart root btrfs 17GiB 100%
 ```
 \
 Mark the boot partition as bootable.
@@ -226,8 +231,9 @@ First we have to encrypt our root and open it.
 ### 11. Formating & mounting partitions
 Lets format our partitions.
 ```
-# mkfs.vfat -F 32 /dev/<name-of-boot-partition>
-# mkfs.btrfs -L BTROOT /dev/mapper/cryptroot
+mkfs.vfat -F 32 /dev/<name-of-boot-partition>
+mkswap /dev/<name-of-swap-partition> && swapon /dev/<name-of-swap-partition>
+mkfs.btrfs -L BTROOT /dev/mapper/cryptroot
 ```
 \
 Now we have to mount our root partitions.
