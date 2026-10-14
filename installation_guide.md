@@ -88,20 +88,20 @@ To boot into the live environment you have to plug the stick into the new system
 ### 5. Preparation
 After booting into the minimal install on the boot device it promts for a keyboard layout. If chosen "de" a few of the keys are still wrong. So i set the keymap manualy.
 ```
-# loadkeys de-latin1
+loadkeys de-latin1
 ```
 
 ### 6. Testing the network
 We want to check if we have a working internet connection because that is needed for the installation. First we see if we can ping. It should just work if the laptop/pc is connected via a ethernet cable.
 ```
-# ping 9.9.9.9
+ping 9.9.9.9
 ```
 \
 Additional information can be gathered with the following command.
 ```
-# ip route
-# ip link
-# ip address
+ip route
+ip link
+ip address
 ```
 
 ### 7. Connect to wifi (if not connected over ethernet)
@@ -116,12 +116,12 @@ update_config=1
 \
 Now you have to start the wpa_supplicant service.
 ```
-# rc-service wpa_supplicant start
+rc-service wpa_supplicant start
 ```
 \
 After the setup is done we can start the wpa_cli application.
 ```
-# wpa_cli
+wpa_cli
 ```
 \
 To setup the connection you have to run the following commands inside of this application and it should look similar like this.
@@ -148,7 +148,7 @@ OK
 
 You can check if it worked in here.
 ```
-# ip link
+ip link
 ```
 If the link for the wifi entry shows UP it is connected.
 
@@ -172,18 +172,18 @@ ssh root@<ip-address>
 ### 8. Sync network time
 We will run chronyd to sync up our time.
 ```
-# chronyd -q
+chronyd -q
 ```
 
 ### 9. Partitioning
 To check what drives are currently connected we can call this command.
 ```
-# lsblk
+lsblk
 ```
 \
 At the beginning we want to override all data that was on it bevor for safety reasons.
 ```
-# dd if=/dev/urandom of=/dev/<name-of-drive> bs=4096 status=progress
+dd if=/dev/urandom of=/dev/<name-of-drive> bs=4096 status=progress
 ```
 > [!NOTE]
 > This step is optional, but most of the time best practice, as long as you don't do it too often. This overwrites the whole disk so it wears it down alot.
@@ -191,7 +191,7 @@ At the beginning we want to override all data that was on it bevor for safety re
 \
 We will use parted to partition our disks. Open it by typing this.
 ```
-# parted /dev/<name-of-drive>
+parted /dev/<name-of-drive>
 ```
 \
 Make a gpt table.
@@ -224,8 +224,8 @@ q
 ### 10. Encrypting root
 First we have to encrypt our root and open it.
 ```
-# cryptsetup luksFormat -s256 -c aes-xts-plain64 /dev/<name-of-root-partition>
-# cryptsetup luksOpen /dev/<name-of-root-partition> cryptroot
+cryptsetup luksFormat -s256 -c aes-xts-plain64 /dev/<name-of-root-partition>
+cryptsetup luksOpen /dev/<name-of-root-partition> cryptroot
 ```
 
 ### 11. Formating & mounting partitions
@@ -238,46 +238,37 @@ mkfs.btrfs -L BTROOT /dev/mapper/cryptroot
 \
 Now we have to mount our root partitions.
 ```
-# mkdir /mnt/root
-# mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag /dev/mapper/cryptroot /mnt/root/
+mount -m /dev/mapper/cryptroot /mnt/root/
 ```
 
 ### 12. Create and mount subvolumes
 We can create subvolumes on the root partition to organize our filesystem.
 ```
-# btrfs subvolume create /mnt/root/activeroot
-# btrfs subvolume create /mnt/root/swap
-# btrfs subvolume create /mnt/root/home
+btrfs subvolume create /mnt/root/@
+btrfs subvolume create /mnt/root/@home
+btrfs subvolume create /mnt/root/@snapshots
 ```
 \
-Afterwards we have to mount the subvolumes.
+Unmount root
 ```
-# mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag,subvol=activeroot /dev/mapper/cryptroot /mnt/gentoo/
-# mkdir /mnt/gentoo/swap
-# mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag,subvol=swap /dev/mapper/cryptroot /mnt/gentoo/swap/
-# mkdir /mnt/gentoo/home
-# mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag,subvol=home /dev/mapper/cryptroot /mnt/gentoo/home/
-# mkdir /mnt/gentoo/boot
-# mkdir /mnt/gentoo/efi
-# mount /dev/<name-of-boot-partition> /mnt/gentoo/boot/
-# mount /dev/<name-of-boot-partition> /mnt/gentoo/efi/
+umount /mnt/root
 ```
 
-### 13. Create swap
-Create swap.
+Afterwards we have to mount the subvolumes.
 ```
-# btrfs filesystem mkswapfile --size 16g --uuid clear /mnt/gentoo/swap/swapfile
+mount -o noatime,compress=zstd:1,subvol=@ /dev/mapper/cryptroot /mnt/gentoo/
+mount -m -o noatime,compress=zstd:1,subvol=@home /dev/mapper/cryptroot /mnt/gentoo/home
+mount -m -o noatime,compress=zstd:1,subvol=@snapshots /dev/mapper/cryptroot /mnt/gentoo/.snapshots
 ```
-\
-Activate the swap file.
 ```
-# swapon /mnt/gentoo/swap/swapfile
+mount -m /dev/<name-of-boot-partition> /mnt/gentoo/boot/
+mount -m /dev/<name-of-boot-partition> /mnt/gentoo/efi/
 ```
 
 ### 14. Downloading, varifying and unpacking stage3
 Enter gentoos text based download page.
 ```
-# links https://distfiles.gentoo.org/releases/amd64/autobuilds
+links https://distfiles.gentoo.org/releases/amd64/autobuilds
 ```
 1. Navigate to the latest timestamp directory.
 2. Go to the "stage3-amd64-openrc-..." file
@@ -288,54 +279,54 @@ Enter gentoos text based download page.
 
 Now we should be able to see both files in this directory.
 ```
-# ls
+ls
 ```
 \
 Import the gentoo release signing key.
 ```
-# gpg --import /usr/share/openpgp-keys/gentoo-release.asc
+gpg --import /usr/share/openpgp-keys/gentoo-release.asc
 ```
 \
 Verify the files we just downloaded.
 ```
-# gpg --verify ./<file>.asc
+gpg --verify ./<file>.asc
 ```
 This should tell us that it is a good signature.
 
 Get rid of the .asc file, because the verification is done.
 ```
-# rm ./<file>.asc
+rm ./<file>.asc
 ```
 \
 Move the remaining file into the root directory of our system that we are installing.
 ```
-# mv ./<file> /mnt/gentoo
+mv ./<file> /mnt/gentoo
 ```
 \
 Change into that root directory.
 ```
-# cd /mnt/gentoo/
+cd /mnt/gentoo/
 ```
 \
 Unpack the stage3 file.
 ```
-# tar xpvf ./<file> --xattrs-include="*.*" --numeric-owner
+tar xpvf ./<file> --xattrs-include="*.*" --numeric-owner
 ```
 \
 Delete the .tar.xz file.
 ```
-# rm ./<file>
+rm ./<file>
 ```
 \
 If we look into the root directory now we can se our familiar linux filestructure.
 ```
-# ls
+ls
 ```
 
 ### 15. Adjust swap settings
 Change swap options in config file to allow the swapfile to be in a local filesystem. To do this we have to uncomment these two options.
 ```
-# nano ./etc/conf.d/swap
+nano ./etc/conf.d/swap
 ```
 
 _/mnt/gentoo/etc/conf.d/swap_
@@ -351,7 +342,7 @@ rc_need="localmount"
 First we have to adjust the locale.gen file. Add or uncomment the locales you need (in this case i am using the us ones).
 You have to enter the files like follows.
 ```
-# nano ./etc/locale.gen
+nano ./etc/locale.gen
 ```
 
 _/mnt/gentoo/etc/locale.gen_
@@ -362,7 +353,7 @@ en_US.UTF-8 UTF-8
 \
 We have to adjust one more file.
 ```
-# nano ./etc/locale.conf
+nano ./etc/locale.conf
 ```
 
 _/mnt/gentoo/etc/locale.conf_
@@ -374,7 +365,7 @@ LC_COLLATE="C.UTF-8 UTF-8"
 ### 17. Check clock
 Check if the hwclock is set right.
 ```
-# nano ./etc/conf.d/hwclock
+nano ./etc/conf.d/hwclock
 ```
 
 _/mnt/gentoo/etc/conf.d/hwclock_
@@ -385,17 +376,17 @@ clock="UTC"
 ### 18. Set keymap
 You can check all available keymaps here.
 ```
-# ls /usr/share/keymaps/i386/qwertz/
+ls /usr/share/keymaps/i386/qwertz/
 ```
 or
 ```
-# ls /usr/share/keymaps/i386/qwerty/
+ls /usr/share/keymaps/i386/qwerty/
 ```
 Just remove the .map.gz and you have the keymap name.
 \
 We can write that into this file.
 ```
-# nano ./etc/conf.d/keymaps
+nano ./etc/conf.d/keymaps
 ```
 
 _/mnt/gentoo/etc/conf.d/keymaps_
@@ -405,7 +396,7 @@ keymap="de-latin1"
 \
 And this file.
 ```
-# nano ./etc/vconsole.conf
+nano ./etc/vconsole.conf
 ```
 
 _/mnt/gentoo/etc/vconsole.conf_
@@ -416,32 +407,32 @@ KEYMAP=de-latin1
 ### 19. Set timezone
 You can check all available timezones here.
 ```
-# ls /usr/share/zoneinfo/
+ls /usr/share/zoneinfo/
 ```
 and for Europe for example
 ```
-# ls /usr/share/zoneinfo/Europe/
+ls /usr/share/zoneinfo/Europe/
 ```
 This results in something like "Europe/Berlin"
 \
 Now you can write that into the timezone file.
 ```
-# echo "Europe/Berlin" > ./etc/timezone
+echo "Europe/Berlin" > ./etc/timezone
 ```
 It is also needed here.
 ```
-# ln -sf ../usr/share/zoneinfo/Europe/Brussels /etc/localtime
+ln -sf ../usr/share/zoneinfo/Europe/Brussels /etc/localtime
 ```
 
 ### 20. Create FS tables
 First we have to figure out the UUIDs of our boot partition. (I recommend to call this command in a separate tty for ease of use (ctsl + alt + f1/f2/f3/...) of copying.)
 ```
-# blkid /dev/<name-of-boot-partition>
+blkid /dev/<name-of-boot-partition>
 ```
 \
 Adjust the fstab file.
 ```
-# nano ./etc/fstab
+nano ./etc/fstab
 ```
 
 _/mnt/gentoo/etc/fstab_
@@ -458,7 +449,7 @@ UUID=<boot-part-uuid>   /efi                vfat          umask=077             
 ### 22. Setup grub
 Setup the grub configuration. 
 ```
-# nano ./etc/default/grub
+nano ./etc/default/grub
 ```
 
 _/mnt/gentoo/etc/default/grub_
@@ -474,27 +465,27 @@ GRUB_CMDLINE_LINUX_DEFAULT=""
 ### 23. Setup portage
 Copy the repos.conf into the portage folder.
 ```
-# mkdir ./etc/portage/repos.conf
-# cp ./usr/share/portage/config/repos.conf ./etc/portage/repos.conf/gentoo.conf
+mkdir ./etc/portage/repos.conf
+cp ./usr/share/portage/config/repos.conf ./etc/portage/repos.conf/gentoo.conf
 ```
 \
 Download the config files from github.
 ```
-# wget https://github.com/desolatedependency/my-minimal-portage-configs/archive/main.zip
+wget https://github.com/desolatedependency/my-minimal-portage-configs/archive/main.zip
 ```
 \
 Unzip the file.
 ```
-# unzip ./main.zip
-# rm ./main.zip
+unzip ./main.zip
+rm ./main.zip
 ```
 \
 Move the files into the right directories.
 ```
-# mv ./my-minimal-portage-configs-main/* ./etc/portage/
-# rm -r ./my-minimal-portage-configs-main/
-# mkdir ./etc/portage/env
-# mv ./etc/portage/no-lto ./etc/portage/env/
+mv ./my-minimal-portage-configs-main/* ./etc/portage/
+rm -r ./my-minimal-portage-configs-main/
+mkdir ./etc/portage/env
+mv ./etc/portage/no-lto ./etc/portage/env/
 ```
 > [!NOTE]
 > You can overwrite everything that got autogenerated.
@@ -513,7 +504,7 @@ The marked video drivers are for a system that has a intel and a amd gpu. 'intel
 \
 Select a mirror that is close to you. (Choose at least one https and one rsync mirror.)
 ```
-# mirrorselect -i -o >> ./etc/portage/make.conf
+mirrorselect -i -o >> ./etc/portage/make.conf
 ```
 1. Select with 'space'
 2. Apply with 'enter'
@@ -529,25 +520,25 @@ GENTOO_MIRRORS= ...
 ### 24. Change into root
 Copy resolve.conf for internet usage.
 ```
-# cp /etc/resolv.conf /mnt/gentoo/etc/
+cp /etc/resolv.conf /mnt/gentoo/etc/
 ```
 \
 Mount a few things from our live cd to our root system.
 ```
-# mount --types proc /proc/ /mnt/gentoo/proc/
-# mount --rbind /sys/ /mnt/gentoo/sys/
-# mount --rbind /dev/ /mnt/gentoo/dev/
-# mount --bind /run/ /mnt/gentoo/run/
-# mount --make-rslave /mnt/gentoo/sys/
-# mount --make-rslave /mnt/gentoo/dev/
-# mount --make-slave /mnt/gentoo/run/
+mount --types proc /proc/ /mnt/gentoo/proc/
+mount --rbind /sys/ /mnt/gentoo/sys/
+mount --rbind /dev/ /mnt/gentoo/dev/
+mount --bind /run/ /mnt/gentoo/run/
+mount --make-rslave /mnt/gentoo/sys/
+mount --make-rslave /mnt/gentoo/dev/
+mount --make-slave /mnt/gentoo/run/
 ```
 \
 Chroot into root system.
 ```
-# chroot /mnt/gentoo/ /bin/bash
-# source /etc/profile
-# export PS1="(chroot) ${PS1}"
+chroot /mnt/gentoo/ /bin/bash
+source /etc/profile
+export PS1="(chroot) ${PS1}"
 ```
 
 ### 25. [If interrupted]
@@ -557,27 +548,27 @@ Redo the [Preparation](#5-preparation) and [Connect to wifi (if not connected ov
 
 Now we have to mount all of the drives again. To do that we unlock our encrypted drive.
 ```
-# cryptsetup luksOpen /dev/<name-of-root-partition> cryptroot
+cryptsetup luksOpen /dev/<name-of-root-partition> cryptroot
 ```
 \
 Then we are mounting root.
 ```
-# mkdir /mnt/root
-# mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag /dev/mapper/cryptroot /mnt/root/
+mkdir /mnt/root
+mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag /dev/mapper/cryptroot /mnt/root/
 ```
 \
 And then we mount the other volumes.
 ```
-# mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag,subvol=activeroot /dev/mapper/cryptroot /mnt/gentoo/
-# mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag,subvol=swap /dev/mapper/cryptroot /mnt/gentoo/swap/
-# mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag,subvol=home /dev/mapper/cryptroot /mnt/gentoo/home/
-# mount /dev/<name-of-boot-partition> /mnt/gentoo/boot/
-# mount /dev/<name-of-boot-partition> /mnt/gentoo/efi/
+mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag,subvol=activeroot /dev/mapper/cryptroot /mnt/gentoo/
+mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag,subvol=swap /dev/mapper/cryptroot /mnt/gentoo/swap/
+mount -t btrfs -o defaults,noatime,compress=lzo,autodefrag,subvol=home /dev/mapper/cryptroot /mnt/gentoo/home/
+mount /dev/<name-of-boot-partition> /mnt/gentoo/boot/
+mount /dev/<name-of-boot-partition> /mnt/gentoo/efi/
 ```
 \
 Turn on swap.
 ```
-# swapon /mnt/gentoo/swap/swapfile
+swapon /mnt/gentoo/swap/swapfile
 ```
 \
 After following the steps in [Change into root](#24-change-into-root) we can continue from the point where we stopped or start debugging.
@@ -585,8 +576,8 @@ After following the steps in [Change into root](#24-change-into-root) we can con
 ### 26. Updating the Gentoo ebuild repository
 Syncronize portage with mirrors.
 ```
-# emerge-webrsync
-# emerge --sync --quiet
+emerge-webrsync
+emerge --sync --quiet
 ```
 
 ### 27. Select Profile
@@ -597,81 +588,81 @@ eselect profile list
 \
 Select a fitting profile for your setup. (In my case i am using the desktop profile)
 ```
-# eselect profile set <number-of-profile>
+eselect profile set <number-of-profile>
 ```
 
 ### 28. Applying localization configurations
 Sync timezone config.
 ```
-# emerge --config sys-libs/timezone-data
+emerge --config sys-libs/timezone-data
 ```
 \
 Generate locales.
 ```
-# locale-gen
+locale-gen
 ```
 \
 Update environment variables for this terminal.
 ```
-# env-update
+env-update
 ```
 \
 Now we can see all the usable locales here.
 ```
-# eselect locale list
+eselect locale list
 ```
 \
 Select the locale you want to use for your system. (In my case en_US.utf8)
 ```
-# eselect locale set <number-of-locale>
+eselect locale set <number-of-locale>
 ```
 \
 Restart terminal.
 ```
-# source /etc/profile
-# export PS1="(chroot) ${PS1}"
+source /etc/profile
+export PS1="(chroot) ${PS1}"
 ```
 
 ### 29. Set cpu flags
 Install cpuid2cpuflags.
 ```
-# emerge --ask --oneshot app-portage/cpuid2cpuflags
+emerge --ask --oneshot app-portage/cpuid2cpuflags
 ```
 \
 If you want you can see all your cpu flags by running it.
 ```
-# cpuid2cpuflags
+cpuid2cpuflags
 ```
 This will output the flags that should be used for the cpu.
 \
 We want to copy these into our _package.use_:
 ```
-# echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
+echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 ```
 
 ### 30. Updating the @world set
 We will update the @world set to recompile everything that got its flags changed.
 ```
-# emerge --ask --verbose --update --deep --changed-use @world
+emerge --ask --verbose --update --deep --changed-use @world
 ```
 > [!NOTE]
 > This will probably take a long time.
 
 Now we want to check if there any obsolete packages.
 ```
-# emerge --ask --pretend --depclean
+emerge --ask --pretend --depclean
 ```
 If there are packeges that you want to keep use `emerge --noreplace` to add it to the @world list.
 \
 To delete the obsolete packages you have to call the same command as above without the --pretend.
 ```
-# emerge --ask --depclean
+emerge --ask --depclean
 ```
 
 ### 31. Install core packages
 Emerge all core packages.
 ```
-# emerge --ask sys-kernel/installkernel sys-kernel/linux-firmware \
+emerge --ask sys-kernel/installkernel sys-kernel/linux-firmware \
 > sys-fs/cryptsetup sys-fs/btrfs-progs sys-block/parted sys-boot/grub sys-auth/seatd  sys-apps/pciutils sys-process/cronie \
 > net-misc/chrony net-misc/networkmanager app-admin/sysklogd app-admin/doas \
 > app-editors/neovim
@@ -682,8 +673,8 @@ Emerge all core packages.
 ### 21. Setup initramfs
 To do this we have to create a configuration in _/etc/dracut.conf.d/_.
 ```
-# mkdir /etc/dracut.conf.d
-# nvim /etc/dracut.conf.d/encryption.conf
+mkdir /etc/dracut.conf.d
+nvim /etc/dracut.conf.d/encryption.conf
 ```
 
 _/etc/dracut.conf.d/encryption.conf_
@@ -695,12 +686,12 @@ kernel_cmdline+=" root=UUID=<uuid-of-cryptroot> rd.luks.uuid=<uuid-of-root-parti
 \
 We can get the UUIDS like this
 ```
-# lsblk --fs
+lsblk --fs
 ```
 \
 We want to check which kernel we are running on our future machine.
 ```
-# ls /lib/modules
+ls /lib/modules
 ```
 \
 The initramfs has to be build like this.
@@ -718,7 +709,7 @@ cryptroot UUID=<uuid-of-encrypted-root-partition> none luks
 ### 32. Configure doas
 Create a doas.conf.
 ```
-# nano /etc/doas.conf
+nano /etc/doas.conf
 ```
 
 _/etc/doas.conf_
@@ -728,53 +719,53 @@ permit :wheel
 \
 Adjust permissions for doas.conf.
 ```
-# chown -c root:root /etc/doas.conf
-# chmod -c 0400 /etc/doas.conf
+chown -c root:root /etc/doas.conf
+chmod -c 0400 /etc/doas.conf
 ```
 
 ### 33. Configuring services
 Service setup.
 ```
-# rc-update add seatd boot
-# rc-update add dbus boot
-# rc-update add NetworkManager boot
-# rc-update add sysklogd default
-# rc-update add chronyd default
-# rc-update add cronie default
+rc-update add seatd boot
+rc-update add dbus boot
+rc-update add NetworkManager boot
+rc-update add sysklogd default
+rc-update add chronyd default
+rc-update add cronie default
 ```
 \
 Replace the service that sets the hostname.
 ```
-# rc-update delete hostname boot
-# rc-service NetworkManager start
-# nmcli general hostname <hostname-of-system>
+rc-update delete hostname boot
+rc-service NetworkManager start
+nmcli general hostname <hostname-of-system>
 ```
 
 ### 34. Managing user accounts
 Set a password for root.
 ```
-# passwd
+passwd
 ```
 \
 Setup user account.
 ```
-# useradd <username>
-# passwd <username>
-# usermod <username> -aG users
-# usermod <username> -aG wheel
-# usermod <username> -aG disk
-# usermod <username> -aG cdrom
-# usermod <username> -aG floppy
-# usermod <username> -aG audio
-# usermod <username> -aG video
-# usermod <username> -aG input
-# usermod <username> -aG seat
+useradd <username>
+passwd <username>
+usermod <username> -aG users
+usermod <username> -aG wheel
+usermod <username> -aG disk
+usermod <username> -aG cdrom
+usermod <username> -aG floppy
+usermod <username> -aG audio
+usermod <username> -aG video
+usermod <username> -aG input
+usermod <username> -aG seat
 ```
 
 ### 35. Compile kernel
 Now we are going to compile the kernel.
 ```
-# emerge --ask sys-kernel/gentoo-kernel
+emerge --ask sys-kernel/gentoo-kernel
 ```
 > [!NOTE]
 > This will also take a long time.
@@ -782,29 +773,29 @@ Now we are going to compile the kernel.
 \
 Once the kernel is build it will be updated with the package manager. Old kernels will be deleted with a depclean.
 ```
-# emerge --ask --depclean
+emerge --ask --depclean
 ```
 \
 Alternatively, to specifically clean up old kernel versions:
 ```
-# emerge --ask --prune sys-kernel/gentoo-kernel sys-kernel/gentoo-kernel-bin
+emerge --ask --prune sys-kernel/gentoo-kernel sys-kernel/gentoo-kernel-bin
 ```
 
 ### 36. Install bootloader
 Install grub.
 ```
-# grub-install --target=x86_64-efi --efi-directory /boot/ --removable --recheck
+grub-install --target=x86_64-efi --efi-directory /boot/ --removable --recheck
 ```
 \
 Generate grub boot option configuration.
 ```
-# grub-mkconfig -o /boot/grub/grub.cfg
+grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
 ### 37. Rebooting
 Rebooting the system.
 ```
-# reboot
+reboot
 ```
 > [!NOTE]
 > Now you can remove the installation device.
@@ -812,11 +803,11 @@ Rebooting the system.
 ### 38. Lock root password
 After logging in with our user account we are locking the root password for safty reasons.
 ```
-~ doas -u root passwd -l root
+doas -u root passwd -l root
 ```
 
 ### 39. Connect Wifi
 You can connect over wifi with this menu.
 ```
-~ nmtui
+nmtui
 ```
