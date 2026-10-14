@@ -94,7 +94,7 @@ After booting into the minimal install on the boot device it promts for a keyboa
 ### 6. Testing the network
 We want to check if we have a working internet connection because that is needed for the installation. First we see if we can ping. It should just work if the laptop/pc is connected via a ethernet cable.
 ```
-# ping archlinux.org
+# ping 9.9.9.9
 ```
 \
 Additional information can be gathered with the following command.
@@ -152,6 +152,19 @@ You can check if it worked in here.
 ```
 If the link for the wifi entry shows UP it is connected.
 
+### Enable ssh
+```
+/etc/init.d/sshd start
+```
+check ip
+```
+ip a
+```
+connect
+```
+ssh root@<ip-address>
+```
+
 ### 8. Sync network time
 We will run chronyd to sync up our time.
 ```
@@ -182,7 +195,7 @@ Make a gpt table.
 mklabel gpt
 ```
 \
-Create partitions for boot and root.
+Create partitions
 ```
 mkpart boot fat32 0% 1G
 mkpart root btrfs 1G 100%
