@@ -775,15 +775,7 @@ Setup user account.
 ```
 useradd <username>
 passwd <username>
-usermod <username> -aG users
-usermod <username> -aG wheel
-usermod <username> -aG disk
-usermod <username> -aG cdrom
-usermod <username> -aG floppy
-usermod <username> -aG audio
-usermod <username> -aG video
-usermod <username> -aG input
-usermod <username> -aG seat
+usermod -aG users,wheel,disk,cdrom,floppy,audio,video,input,seat <username>
 ```
 
 ### 35. Compile kernel
