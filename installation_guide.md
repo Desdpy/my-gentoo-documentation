@@ -353,8 +353,7 @@ nano ./etc/locale.gen
 
 _/mnt/gentoo/etc/locale.gen_
 ```
-en_US ISO-8859-1
-en_US.UTF-8 UTF-8
+en_US
 ```
 \
 We have to adjust one more file.
@@ -427,10 +426,15 @@ echo "Europe/Berlin" > ./etc/timezone
 ```
 It is also needed here.
 ```
-ln -sf ../usr/share/zoneinfo/Europe/Brussels /etc/localtime
+ln -sf ../usr/share/zoneinfo/Europe/Berlin /etc/localtime
 ```
 
 ### 20. Create FS tables
+First let it generate with:
+```
+genfstab -U /mnt/gentoo > /mnt/gentoo/etc/fstab
+```
+Then adjust:
 First we have to figure out the UUIDs of our boot partition. (I recommend to call this command in a separate tty for ease of use (ctsl + alt + f1/f2/f3/...) of copying.)
 ```
 blkid /dev/<name-of-boot-partition>
@@ -443,13 +447,26 @@ nano ./etc/fstab
 
 _/mnt/gentoo/etc/fstab_
 ```
-# <fs>                  <mountpoint>        <type>        <opts>                                                                      <dump>    <pass>
-LABEL=BTROOT            /                   btrfs         defaults,noatime,compress=lzo,autodefrag,discard=async,subvol=activeroot    0         0
-LABEL=BTROOT            /home               btrfs         defaults,noatime,compress=lzo,autodefrag,discard=async,subvol=home          0         0
-LABEL=BTROOT            /swap               btrfs         defaults,noatime,compress=lzo,autodefrag,discard=async,subvol=swap          0         0
-/swap/swapfile          none                swap          defaults                                                                    0         0
-UUID=<boot-part-uuid>   /boot               vfat          umask=077                                                                   0         1
-UUID=<boot-part-uuid>   /efi                vfat          umask=077                                                                   0         1
+# /dev/mapper/cryptroot LABEL=BTROOT
+LABEL=BTROOT    /               btrfs           rw,noatime,compress=zstd:1,ssd,space_cache=v2,subvol=/@ 0 0
+
+# /dev/mapper/cryptroot LABEL=BTROOT
+LABEL=BTROOT    /swap           btrfs           rw,noatime,compress=zstd:1,ssd,space_cache=v2,subvol=/@swap     0 0
+
+# /dev/mapper/cryptroot LABEL=BTROOT
+LABEL=BTROOT    /home           btrfs           rw,noatime,compress=zstd:1,ssd,space_cache=v2,subvol=/@home     0 0
+
+# /dev/mapper/cryptroot LABEL=BTROOT
+LABEL=BTROOT    /.snapshots     btrfs           rw,noatime,compress=zstd:1,ssd,space_cache=v2,subvol=/@snapshots        0 0
+
+# /dev/nvme0n1p1
+UUID=<boot-part-uuid>          /boot           vfat            rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,errors=remount-ro   0 2
+
+# /dev/nvme0n1p1
+UUID=<boot-part-uuid>          /efi            vfat            rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,errors=remount-ro   0 2
+
+/swap/swapfile          none            swap            defaults        0 0
+                                                                 0         1
 ```
 
 ### 22. Setup grub
