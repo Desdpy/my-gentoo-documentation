@@ -687,9 +687,9 @@ emerge --ask --depclean
 Emerge all core packages.
 ```
 emerge --ask sys-kernel/installkernel sys-kernel/linux-firmware \
-> sys-fs/cryptsetup sys-fs/btrfs-progs sys-block/parted sys-boot/grub sys-auth/seatd  sys-apps/pciutils sys-process/cronie \
-> net-misc/chrony net-misc/networkmanager app-admin/sysklogd app-admin/doas \
-> app-editors/neovim
+sys-fs/cryptsetup sys-fs/btrfs-progs sys-block/parted sys-boot/grub sys-auth/seatd  sys-apps/pciutils sys-process/cronie \
+net-misc/chrony net-misc/networkmanager app-admin/sysklogd app-admin/doas \
+app-editors/neovim
 ```
 > [!NOTE]
 > This will also take a long time.
@@ -738,7 +738,7 @@ nano /etc/doas.conf
 
 _/etc/doas.conf_
 ```
-permit :wheel
+permit persist :wheel
 ```
 \
 Adjust permissions for doas.conf.
